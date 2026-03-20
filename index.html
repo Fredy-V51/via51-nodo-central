@@ -38,131 +38,88 @@
         const [telefono, setTelefono] = React.useState("");
         const [status, setStatus] = React.useState("");
         const [registrado, setRegistrado] = React.useState(() => !!localStorage.getItem('via51_firmado'));
-        const [order, setOrder] = React.useState("LO-SP");
         const [procedencia, setProcedencia] = React.useState("DIRECTO");
-        const [notif, setNotif] = React.useState("");
-
-        const resetFormulario = () => {
-            localStorage.removeItem('via51_firmado');
-            setNombre("");
-            setDni("");
-            setTelefono("");
-            setStatus("");
-            setRegistrado(false);
-        };
-
-        React.useEffect(() => {
-            const checkGeo = async () => {
-                try {
-                    const res = await fetch('https://ipapi.co/json/');
-                    if (res.ok) {
-                        const data = await res.json();
-                        const sierra = ["Cusco", "Puno", "Ayacucho", "Huancavelica", "Apurimac", "Junin", "Pasco"];
-                        if (data.country_code === "PE" && sierra.includes(data.region)) setOrder("LO-HA");
-                    }
-                } catch (e) { console.log("Geo-Localización activa."); }
-            };
-            checkGeo();
-        }, []);
-
-        const content = {
-            acuerdo: { ES: "SELLAR ACUERDO POLÍTICO", QU: "POLÍTICO ARARIYTA SELLAY", EN: "SEAL POLITICAL AGREEMENT" },
-            lema: { ES: "Contigo recuperaremos la paz", QU: "Qanwan hawkalla kawsayta kutichisun", EN: "With you we will recover peace" }
-        };
-
-        const labels = order === "LO-HA" ? [content.acuerdo.QU, content.acuerdo.ES, content.acuerdo.EN] : [content.acuerdo.ES, content.acuerdo.QU, content.acuerdo.EN];
 
         const handleRegistro = async () => {
-            const nLimpio = nombre.trim();
-            const dLimpio = dni.trim();
-            const tLimpio = telefono.trim();
+            const dL = dni.trim();
+            const nL = nombre.trim();
+            if (dL.length !== 8) return setStatus("⚠️ DNI debe tener 8 números.");
+            if (nL.length < 2) return setStatus("⚠️ Ingrese nombre completo.");
 
-            const regexNombre = /^[a-zA-ZáéíóúÁÉÍÓÚñÑwW]{2,}(\s[a-zA-ZáéíóúÁÉÍÓÚñÑwW]{2,})*$/;
-            if (!regexNombre.test(nLimpio)) return setStatus("⚠️ Nombre: use grupos de mín. 2 letras.");
-            if (dLimpio.length !== 8) return setStatus("⚠️ El DNI debe tener 8 números.");
-            if (tLimpio.length !== 9) return setStatus("⚠️ El WhatsApp debe tener 9 números.");
+            // Filtro de Padrón solicitado
+            if (dL.startsWith("9999")) return setStatus("⚠️ DNI INHABILITADO.");
+            if (!dL.startsWith("8888")) return setStatus("⚠️ DNI NO FIGURA EN PADRÓN.");
 
-            setStatus("Verificando datos...");
-
+            setStatus("Procesando acuerdo...");
             try {
-                const { data: existente } = await supabaseClient.from('pol_registro_ciudadano').select('dni').eq('dni', dLimpio).maybeSingle();
-                if (existente) return setStatus("⚠️ DNI ya registrado.");
+                const { data: existe } = await supabaseClient.from('pol_registro_ciudadano').select('dni').eq('dni', dL).maybeSingle();
+                if (existe) return setStatus("⚠️ Ya registrado.");
 
                 const { error } = await supabaseClient.from('pol_registro_ciudadano').insert([{ 
-                    nombre: nLimpio.toUpperCase(), 
-                    dni: dLimpio, 
-                    telefono: tLimpio,
-                    compromiso: `V2.9.16-${order}-FROM:${procedencia}` 
+                    nombre: nL.toUpperCase(), dni: dL, telefono: telefono.trim(),
+                    compromiso: `V2.9.21-FROM:${procedencia}` 
                 }]);
 
                 if (!error) {
                     localStorage.setItem('via51_firmado', 'true');
                     setRegistrado(true);
-                } else { setStatus("❌ Error al guardar."); }
-            } catch (e) { setStatus("❌ Error de red."); }
+                }
+            } catch (e) { setStatus("❌ Error de conexión."); }
         };
 
-if (registrado) {
-    const waMsg = encodeURIComponent(`Hola Vía 51 | Mesías Guevara, soy ${nombre.toUpperCase()}, DNI ${dni}. ¡Presente!`);
-    
-    // Cambiamos el enlace para que sea más compatible con móviles
-    const waUrl = `https://api.whatsapp.com/send?phone=51921654233&text=${waMsg}`;
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-[#49187D] p-6 text-center fade-in">
-            <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full">
-                <div className="text-green-500 text-6xl mb-4 font-bold">✓</div>
-                <h2 className="text-[#49187D] font-black text-2xl uppercase italic leading-none">Acuerdo Sellado</h2>
-                <p className="text-gray-400 mt-4 text-[10px] font-bold uppercase tracking-widest leading-tight">
-                    Gracias por sumarte al cambio con Mesías Guevara
-                </p>
-                
-                {/* Usamos api.whatsapp.com que fuerza la apertura de la App en móviles */}
-                <a 
-                    href={waUrl} 
-                    className="mt-8 block w-full bg-[#25D366] text-white font-black py-4 rounded-2xl shadow-lg uppercase text-[11px] hover:scale-105 transition-transform"
-                >
-                    📱 Confirmar en mi WhatsApp
-                </a>
-
-                <button onClick={resetFormulario} className="mt-8 text-[9px] text-gray-400 font-bold uppercase underline">
-                    Nuevo Registro
-                </button>
-            </div>
-        </div>
-    );
-}
+        if (registrado) {
+            const waMsg = encodeURIComponent(`Hola Vía 51 | Mesías Guevara, soy ${nombre.toUpperCase()}, DNI ${dni}. ¡Acuerdo Sellado!`);
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-[#49187D] p-6 text-center">
+                    <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full">
+                        <div className="text-green-500 text-6xl mb-4">✓</div>
+                        <h2 className="text-[#49187D] font-black text-2xl uppercase italic">Acuerdo Sellado</h2>
+                        <a href={`https://api.whatsapp.com/send?phone=51921654233&text=${waMsg}`} target="_blank" className="mt-8 block w-full bg-[#25D366] text-white font-black py-4 rounded-2xl uppercase text-[11px]">📱 Confirmar WhatsApp</a>
+                        <button onClick={() => {localStorage.removeItem('via51_firmado'); setRegistrado(false);}} className="mt-8 text-[9px] text-gray-400 font-bold uppercase underline">Nuevo Registro</button>
+                    </div>
+                </div>
+            );
+        }
 
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-                <div className="max-w-md w-full glass-card overflow-hidden border border-gray-100 shadow-2xl bg-white">
-                    <div className="bg-[#49187D] p-8 text-center">
-                        <h1 className="text-white text-[12px] font-black uppercase tracking-[0.3em]">Nodo Político Vía 51</h1>
-                        <p className="text-purple-200 text-[8px] font-bold mt-2 tracking-widest uppercase">Mesías Guevara Liderazgo</p>
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white rounded-[3.5rem] overflow-hidden shadow-2xl border border-gray-100">
+                    <div className="bg-[#49187D] p-8 text-center text-white">
+                        <h1 className="text-[12px] font-black uppercase tracking-[0.3em]">Nodo Político Vía 51</h1>
+                        <p className="text-[9px] opacity-70 mt-1 uppercase">Mesías Guevara Liderazgo</p>
                     </div>
-                    <div className="p-8">
-                        <div className="grid grid-cols-2 gap-2 mb-6">
-                            {['Presidente', 'Senadores', 'Diputados', 'Garantías'].map(btn => (
-                                <button key={btn} onClick={() => {setProcedencia(btn); setNotif(`Hacia: ${btn}`); setTimeout(()=>setNotif(""), 2000);}} className={`text-[8px] py-3 rounded-xl font-black uppercase transition-all ${procedencia === btn ? 'bg-[#49187D] text-white ring-2 ring-purple-300' : 'bg-purple-50 text-[#49187D]'}`}>{btn}</button>
+                    
+                    <div className="p-8 space-y-4">
+                        {/* FILAS DE BOTONES RESTAURADAS */}
+                        <div className="grid grid-cols-2 gap-2">
+                            {['Presidente', 'Senadores'].map(btn => (
+                                <button key={btn} onClick={() => setProcedencia(btn)} className={`text-[8px] py-3 rounded-xl font-black uppercase ${procedencia === btn ? 'bg-[#49187D] text-white' : 'bg-purple-50 text-purple-900'}`}>{btn}</button>
                             ))}
                         </div>
-                        <div className="space-y-3">
-                            <input type="text" placeholder="Nombres y Apellidos" className="w-full p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm font-bold outline-none" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                            <input type="text" maxLength="8" placeholder="D.N.I. (8 dígitos)" className="w-full p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm font-bold outline-none" value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g,''))} />
-                            <input type="text" maxLength="9" placeholder="WhatsApp (9 dígitos)" className="w-full p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm font-bold outline-none" value={telefono} onChange={(e) => setTelefono(e.target.value.replace(/\D/g,''))} />
+                        <div className="grid grid-cols-2 gap-2">
+                            {['Diputados', 'P. Andino'].map(btn => (
+                                <button key={btn} onClick={() => setProcedencia(btn)} className={`text-[8px] py-3 rounded-xl font-black uppercase ${procedencia === btn ? 'bg-[#49187D] text-white' : 'bg-purple-50 text-purple-900'}`}>{btn}</button>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {['Garantías', 'Partido Morado'].map(btn => (
+                                <button key={btn} onClick={() => setProcedencia(btn)} className={`text-[8px] py-3 rounded-xl font-black uppercase ${procedencia === btn ? 'bg-[#49187D] text-white' : 'bg-purple-50 text-purple-900'}`}>{btn}</button>
+                            ))}
+                        </div>
+
+                        <div className="pt-4 space-y-3">
+                            <input type="text" placeholder="Nombres y Apellidos" className="w-full p-4 rounded-xl bg-gray-50 border text-sm font-bold outline-none" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                            <input type="text" maxLength="8" placeholder="D.N.I. (8 dígitos)" className="w-full p-4 rounded-xl bg-gray-50 border text-sm font-bold outline-none" value={dni} onChange={(e) => setDni(e.target.value.replace(/\D/g,''))} />
+                            <input type="text" maxLength="9" placeholder="WhatsApp" className="w-full p-4 rounded-xl bg-gray-50 border text-sm font-bold outline-none" value={telefono} onChange={(e) => setTelefono(e.target.value.replace(/\D/g,''))} />
                             
-                            <button onClick={handleRegistro} className="w-full bg-[#49187D] text-white font-black py-6 rounded-[2.5rem] shadow-xl uppercase mt-4">
-                                <div className="text-[11px] mb-1">{labels[0]}</div>
-                                <div className="text-[8px] text-purple-300 opacity-80">{labels[1]}</div>
+                            <button onClick={handleRegistro} className="w-full bg-[#49187D] text-white font-black py-6 rounded-[2.5rem] shadow-xl uppercase mt-4 active:scale-95 transition-transform">
+                                <div className="text-[11px]">Sellar Acuerdo Político</div>
+                                <div className="text-[8px] text-purple-300 opacity-80 italic">Vía 51 | Mesías Guevara</div>
                             </button>
-                            {status && <p className="text-center text-[10px] font-bold text-purple-600 mt-2 italic">{status}</p>}
+                            {status && <p className="text-center text-[10px] font-bold text-red-500 mt-2">{status}</p>}
                         </div>
                     </div>
-                    <footer className="bg-gray-900 py-4 text-center">
-                        <p className="text-[8px] text-gray-500 font-black tracking-widest uppercase">Protocolo Vía51 - V2.9.16 | Mesías Guevara</p>
-                    </footer>
                 </div>
-                {notif && <div className="fixed top-5 bg-[#49187D] text-white px-6 py-2 rounded-full text-[10px] font-black uppercase shadow-xl">{notif}</div>}
             </div>
         );
     };
