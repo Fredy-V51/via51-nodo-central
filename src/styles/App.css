@@ -1,0 +1,57 @@
+.app-container { min-height: 100vh; background-size: cover; }
+
+.contenedor-semaforo {
+  position: absolute;
+  top: 70%; /* Ajuste según la posición de la mesa en su pantalla */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.boton-accion {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  padding: 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.boton-accion:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+}
+
+.boton-ceo {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(15px);
+  padding: 1.2rem 1.5rem;
+  min-width: 220px;
+  border-width: 1px;
+  border-style: solid;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.boton-ceo span {
+  letter-spacing: 0.15em;
+}
+
+.boton-ceo:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-bg {
+  background-position: top center; /* Prioriza que se vea la cabeza siempre */
+  background-size: cover;
+}
+
+.animate-fade-in-down { animation: fade-in-down 1s ease-out; }
