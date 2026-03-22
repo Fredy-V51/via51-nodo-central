@@ -2,39 +2,30 @@ import React, { useState } from 'react';
 import { CAMPAIGN_DATA } from '../data/JS/candidato-config';
 
 const SemaforoControl = () => {
-    const [verInterfaz, setVerInterfaz] = useState(true);
+    // ESTADO: ¿Está la interfaz Alfa activa?
+    const [alfaActiva, setAlfaActiva] = useState(true);
 
-    // Layout Blindado
     const layout = {
-        width: '100vw', 
-        height: '100vh', 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        backgroundColor: '#000',
-        fontFamily: 'Arial, sans-serif'
+        width: '100vw', height: '100vh', position: 'fixed',
+        top: 0, left: 0, backgroundColor: '#000', fontFamily: 'Arial, sans-serif'
     };
 
     return (
         <div style={layout}>
-            {/* CAPA 1: EL CENIT (FONDO) */}
+            {/* 1. FONDO (CENIT): Inmutable en el fondo */}
             <div style={{
-                position: 'absolute', 
-                width: '100%', 
-                height: '100%', 
+                position: 'absolute', width: '100%', height: '100%',
                 backgroundImage: `url(${CAMPAIGN_DATA.assets.heroImage})`,
-                backgroundSize: 'cover', 
-                backgroundPosition: 'center',
-                zIndex: 1
+                backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 1
             }} />
 
-            {/* CAPA 2: BOTÓN RETORNO (FLOTANTE) */}
-            {!verInterfaz && (
+            {/* 2. FLECHA DE RETROCESO: Aparece solo cuando Alfa se limpia */}
+            {!alfaActiva && (
                 <button 
-                    onClick={() => setVerInterfaz(true)}
+                    onClick={() => setAlfaActiva(true)} // Retira flecha, restaura Alfa
                     style={{
                         position: 'fixed', top: '30px', left: '30px', zIndex: 9999,
-                        width: '65px', height: '65px', borderRadius: '50%',
+                        width: '60px', height: '60px', borderRadius: '50%',
                         backgroundColor: '#622d91', color: 'white', border: '3px solid white',
                         fontSize: '35px', cursor: 'pointer', fontWeight: 'bold',
                         boxShadow: '0 5px 20px rgba(0,0,0,0.6)', display: 'flex',
@@ -45,8 +36,8 @@ const SemaforoControl = () => {
                 </button>
             )}
 
-            {/* CAPA 3: INTERFAZ ALFA (CONTROL) */}
-            {verInterfaz && (
+            {/* 3. CAPA INTERFAZ ALFA: Se limpia (desmonta) al pulsar un botón */}
+            {alfaActiva && (
                 <div style={{
                     position: 'relative', zIndex: 10, width: '100%', height: '100%',
                     backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex',
@@ -60,7 +51,7 @@ const SemaforoControl = () => {
                         {CAMPAIGN_DATA.botones.map((btn) => (
                             <button 
                                 key={btn.id} 
-                                onClick={() => setVerInterfaz(false)}
+                                onClick={() => setAlfaActiva(false)} // Limpia Alfa, pone flecha
                                 style={{ 
                                     padding: '22px 55px', backgroundColor: btn.color, 
                                     color: 'white', border: 'none', borderRadius: '12px', 
